@@ -30,7 +30,7 @@ def connect_to_gsheet():
         spreadsheet = gc.open("Respostas Formularios")
         
         # Retorna as duas abas que vamos usar
-        return spreadsheet.worksheet("Interpessoais"), spreadsheet.worksheet("Observacoes_Interpessoais")
+        return spreadsheet.worksheet("Fatores_Interpessoais"), spreadsheet.worksheet("Observacoes_Interpessoais")
     except Exception as e:
         st.error(f"Erro ao conectar com o Google Sheets: {e}")
         return None, None
