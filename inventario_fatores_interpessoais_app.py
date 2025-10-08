@@ -30,12 +30,12 @@ def connect_to_gsheet():
         spreadsheet = gc.open("Respostas Formularios")
         
         # Retorna as duas abas que vamos usar
-        return spreadsheet.worksheet("Fatores_Interpessoais"), spreadsheet.worksheet("Observacoes_Interpessoais")
+        return spreadsheet.worksheet("Fatores_Interpessoais")
     except Exception as e:
         st.error(f"Erro ao conectar com o Google Sheets: {e}")
         return None, None
 
-ws_respostas, ws_observacoes = connect_to_gsheet()
+ws_respostas = connect_to_gsheet()
 
 if ws_respostas is None:
     st.error("Não foi possível conectar à aba 'Interpessoais' da planilha. Verifique o nome e as permissões.")
@@ -168,8 +168,6 @@ for bloco in blocos:
                 on_change=registrar_resposta, args=(item_id, widget_key)
             )
 
-observacoes = st.text_area("Observações (opcional):")
-
 # --- BOTÃO DE FINALIZAR E LÓGICA DE RESULTADOS/EXPORTAÇÃO ---
 if st.button("Finalizar e Enviar Respostas", type="primary"):
     if not st.session_state.respostas:
@@ -230,10 +228,6 @@ if st.button("Finalizar e Enviar Respostas", type="primary"):
                     ])
                 
                 ws_respostas.append_rows(respostas_para_enviar, value_input_option='USER_ENTERED')
-                
-                if observacoes and ws_observacoes:
-                    dados_obs = [[timestamp_str, respondente, data, observacoes]]
-                    ws_observacoes.append_rows(dados_obs, value_input_option='USER_ENTERED')
 
                 st.success("Suas respostas foram enviadas com sucesso!")
                 st.balloons()
