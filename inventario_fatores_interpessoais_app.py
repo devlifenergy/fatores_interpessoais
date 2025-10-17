@@ -277,8 +277,7 @@ if st.button("Finalizar e Enviar Respostas", type="primary"):
                 st.error(f"Erro ao enviar dados para a planilha: {e}")
 
 # --- BOTÃO INVISÍVEL PARA PINGER (COM st.empty) ---
-placeholder = st.empty()
-with placeholder.container():
+with st.empty():
     st.markdown('<div id="autoclick-div">', unsafe_allow_html=True) 
     if st.button("Ping Button", key="autoclick_button"):
         print("Ping button clicked by automation.")
