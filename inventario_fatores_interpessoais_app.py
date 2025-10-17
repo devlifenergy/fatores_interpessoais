@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import gspread
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt # Removido
 
 # --- PALETA DE CORES E CONFIGURAÇÃO DA PÁGINA ---
 COLOR_PRIMARY = "#70D1C6"
@@ -15,13 +15,19 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- CSS CUSTOMIZADO (Omitido para economizar espaço) ---
+# --- CSS CUSTOMIZADO ---
 st.markdown(f"""
     <style>
         /* Remoção de elementos do Streamlit Cloud */
         div[data-testid="stHeader"], div[data-testid="stDecoration"] {{
             visibility: hidden; height: 0%; position: fixed;
         }}
+        
+        /* Código que esconde o botão ping */
+        #autoclick-div {{
+            display: none !important; 
+        }}
+        
         footer {{ visibility: hidden; height: 0%; }}
         /* Estilos gerais */
         .stApp {{ background-color: {COLOR_BACKGROUND}; color: {COLOR_TEXT_DARK}; }}
@@ -90,16 +96,16 @@ def connect_to_gsheet():
         gc = gspread.service_account_from_dict(creds_dict)
         spreadsheet = gc.open("Respostas Formularios")
         
-        # Retorna as duas abas que vamos usar
+        # Retorna apenas a aba de respostas
         return spreadsheet.worksheet("Fatores_Interpessoais")
     except Exception as e:
         st.error(f"Erro ao conectar com o Google Sheets: {e}")
-        return None, None
+        return None
 
 ws_respostas = connect_to_gsheet()
 
 if ws_respostas is None:
-    st.error("Não foi possível conectar à aba 'Interpessoais' da planilha. Verifique o nome e as permissões.")
+    st.error("Não foi possível conectar à aba 'Fatores_Interpessoais' da planilha.")
     st.stop()
 
 
@@ -234,9 +240,9 @@ if st.button("Finalizar e Enviar Respostas", type="primary"):
     if not st.session_state.respostas:
         st.warning("Nenhuma resposta foi preenchida.")
     else:
-        st.subheader("Resultados e Envio")
+        st.subheader("Enviando Respostas...") # Título ajustado
 
-        # --- LÓGICA DE CÁLCULO ---
+        # --- LÓGICA DE CÁLCULO (mantida internamente) ---
         respostas_list = []
         for index, row in df_itens.iterrows():
             item_id = row['ID']
@@ -246,31 +252,6 @@ if st.button("Finalizar e Enviar Respostas", type="primary"):
                 "Resposta": resposta_usuario, "Reverso": row["Reverso"]
             })
         dfr = pd.DataFrame(respostas_list)
-
-        dfr_numerico = dfr[pd.to_numeric(dfr['Resposta'], errors='coerce').notna()].copy()
-        if not dfr_numerico.empty:
-            dfr_numerico['Resposta'] = dfr_numerico['Resposta'].astype(int)
-            def ajustar_reverso(row):
-                return (6 - row["Resposta"]) if row["Reverso"] == "SIM" else row["Resposta"]
-            dfr_numerico["Pontuação"] = dfr_numerico.apply(ajustar_reverso, axis=1)
-            media_geral = dfr_numerico["Pontuação"].mean()
-            resumo_blocos = dfr_numerico.groupby("Bloco")["Pontuação"].mean().round(2).reset_index(name="Média").sort_values("Média")
-        else:
-            media_geral = 0
-            resumo_blocos = pd.DataFrame(columns=["Bloco", "Média"])
-
-        st.metric("Pontuação Média Geral (somente itens de 1 a 5)", f"{media_geral:.2f}")
-
-        if not resumo_blocos.empty:
-            st.subheader("Média por Dimensão")
-            st.dataframe(resumo_blocos.rename(columns={"Bloco": "Dimensão"}), use_container_width=True, hide_index=True)
-            
-            st.subheader("Gráfico Comparativo por Dimensão")
-            fig, ax = plt.subplots()
-            ax.pie(x=resumo_blocos["Média"], labels=resumo_blocos["Bloco"], autopct='%1.1f%%', startangle=90)
-            ax.axis('equal')  
-            st.pyplot(fig)
-        
         # --- LÓGICA DE ENVIO PARA GOOGLE SHEETS ---
         with st.spinner("Enviando dados para a planilha..."):
             try:
@@ -289,15 +270,16 @@ if st.button("Finalizar e Enviar Respostas", type="primary"):
                     ])
                 
                 ws_respostas.append_rows(respostas_para_enviar, value_input_option='USER_ENTERED')
-
+                
                 st.success("Suas respostas foram enviadas com sucesso!")
                 st.balloons()
             except Exception as e:
                 st.error(f"Erro ao enviar dados para a planilha: {e}")
 
-                with st.container():
-                    st.markdown('<div id="autoclick-div">', unsafe_allow_html=True)
-                    if st.button("Ping Button", key="autoclick_button"):
-                    # A ação aqui pode ser um simples print no log do Streamlit
-                      print("Ping button clicked by automation.")
-                    st.markdown('</div>', unsafe_allow_html=True)
+# --- BOTÃO INVISÍVEL PARA PINGER (COM st.empty) ---
+placeholder = st.empty()
+with placeholder.container():
+    st.markdown('<div id="autoclick-div">', unsafe_allow_html=True) 
+    if st.button("Ping Button", key="autoclick_button"):
+        print("Ping button clicked by automation.")
+    st.markdown('</div>', unsafe_allow_html=True)
