@@ -3,6 +3,9 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import gspread
+import urllib.parse
+import hmac
+import hashlib
 # import matplotlib.pyplot as plt # Removido
 
 # --- PALETA DE CORES E CONFIGURAÇÃO DA PÁGINA ---
